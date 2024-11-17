@@ -1,0 +1,76 @@
+FROM jenkins/jenkins:jdk17
+
+USER root
+
+RUN apt-get update
+RUN apt-get install wget
+RUN apt-get install curl
+
+RUN wget --no-verbose -O /tmp/apache-maven-3.9.9-bin.tar.gz https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz
+RUN tar xvzf /tmp/apache-maven-3.9.9-bin.tar.gz -C /opt/
+RUN ln -s /opt/apache-maven-3.9.9 /opt/maven
+RUN ln -s /opt/maven/bin/mvn /usr/local/bin/mvn
+RUN rm -f /tmp/apache-maven-3.9.9-bin.tar.gz
+ENV MAVEN_HOME /opt/maven
+ 
+RUN chown -R jenkins:jenkins /opt/maven
+
+# RUN mvn -version
+
+RUN wget --no-verbose -O /tmp/awscli-exe-linux-aarch64.zip https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip
+RUN unzip /tmp/awscli-exe-linux-aarch64 -d /tmp/
+RUN /tmp/aws/install
+RUN rm -f /tmp/awscli-exe-linux-aarch64.zip
+# RUN aws --version
+
+RUN wget --no-verbose -O /tmp/helm-v3.16.3-linux-amd64.tar.gz https://get.helm.sh/helm-v3.16.3-linux-amd64.tar.gz
+RUN tar xvzf /tmp/helm-v3.16.3-linux-amd64.tar.gz -C /opt/
+RUN ln -s /opt/linux-amd64/helm /usr/local/bin/helm
+RUN rm -f /tmp/helm-v3.16.3-linux-amd64.tar.gz
+# RUN helm version
+
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"
+RUN mv kubectl /usr/local/bin/
+RUN chmod 0777 /usr/local/bin/kubectl
+# RUN kubectl version
+
+# RUN apt-get update
+# RUN apt-get install ca-certificates curl
+# RUN install -m 0755 -d /etc/apt/keyrings
+# RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+# RUN chmod a+r /etc/apt/keyrings/docker.asc
+# RUN echo \
+#   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+#   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+#   tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# RUN apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+# RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+# RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+# RUN apt-cache policy docker-ce
+# RUN apt update
+# RUN apt-get -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# RUN apt-get install software-properties-common -y
+# RUN add-apt-repository main
+# RUN apt-get update
+# # RUN rm /etc/apt/preferences.d/nosnap.pref
+# RUN apt-get install -y snapd 
+# RUN snap version
+
+# RUN snap install docker
+
+RUN apt-get update && \
+    apt-get -qy full-upgrade && \
+    apt-get install -qy curl && \
+    curl -sSL https://get.docker.com/ | sh
+
+RUN docker -v
+
+COPY --chown=jenkins:jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
+RUN jenkins-plugin-cli -f /usr/share/jenkins/ref/plugins.txt
+
+RUN apt-get clean
+
+USER jenkins
+

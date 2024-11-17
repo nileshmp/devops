@@ -1,0 +1,274 @@
+provider "aws" {
+    region = "ap-south-1"  # Change to your desired region
+}
+
+# Create IAM Role for EKS Cluster
+
+resource "aws_iam_role" "eks_role" {
+  name = "eks_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Principal = {
+        Service = "eks.amazonaws.com"
+      }
+      Effect = "Allow"
+      Sid    = ""
+    }]
+  })
+}
+
+# Attach Policies: Attach the necessary policies for EKS.
+
+resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  role       = aws_iam_role.eks_role.name
+}
+
+resource "aws_iam_role_policy_attachment" "eks_vpc_resource_controller" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_VPC_Resource_Controller"
+  role       = aws_iam_role.eks_role.name
+}
+
+# Set Up VPC
+# EKS runs in a VPC, which you need to create along with subnets, route tables, and an internet gateway.
+# Create VPC
+resource "aws_vpc" "eks_vpc" {
+  cidr_block = "10.0.0.0/16"
+}
+
+# Create Subnets
+# You need both public and private subnets:
+data "aws_availability_zones" "available" {}
+
+resource "aws_subnet" "eks_public_subnet" {
+  count = 2
+  vpc_id = aws_vpc.eks_vpc.id
+  cidr_block = cidrsubnet(aws_vpc.eks_vpc.cidr_block, 8, count.index)
+  availability_zone = element(data.aws_availability_zones.available.names, count.index)
+  map_public_ip_on_launch = true
+}
+
+resource "aws_subnet" "eks_private_subnet" {
+  count = 2
+  vpc_id = aws_vpc.eks_vpc.id
+  cidr_block = cidrsubnet(aws_vpc.eks_vpc.cidr_block, 8, count.index + 2)
+  availability_zone = element(data.aws_availability_zones.available.names, count.index)
+}
+
+# Create Internet Gateway
+resource "aws_internet_gateway" "eks_ig" {
+  vpc_id = aws_vpc.eks_vpc.id
+}
+
+# Create Route Table
+# This route table will be associated with the public subnets.
+resource "aws_route_table" "public_rt" {
+  vpc_id = aws_vpc.eks_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.eks_ig.id
+  }
+}
+
+# Associate Route Table with Subnets
+resource "aws_route_table_association" "public_rt_assoc" {
+  count          = 2
+  subnet_id      = aws_subnet.eks_public_subnet[count.index].id
+  route_table_id = aws_route_table.public_rt.id
+}
+
+# 3. Set Up Security Groups
+# Create security groups to control the inbound and outbound traffic.
+# EKS Security Group
+resource "aws_security_group" "eks_sg" {
+  vpc_id = aws_vpc.eks_vpc.id
+  name   = "eks_security_group"
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# 4. Create the EKS Cluster
+# Now, you can create the EKS cluster itself.
+resource "aws_eks_cluster" "my_eks_cluster" {
+  name     = "my-eks-cluster"
+  role_arn = aws_iam_role.eks_role.arn
+
+  vpc_config {
+    subnet_ids = flatten([aws_subnet.eks_public_subnet.*.id, aws_subnet.eks_private_subnet.*.id])
+    endpoint_public_access = true
+  }
+
+  depends_on = [aws_iam_role_policy_attachment.eks_cluster_policy]
+}
+
+# 5. Create RDS PostgreSQL Instance
+# Now, set up the RDS PostgreSQL instance. It’s often placed in private subnets for security reasons.
+# Create DB Subnet Group
+resource "aws_db_subnet_group" "default" {
+  name       = "db-subnet-group"
+  subnet_ids = aws_subnet.eks_private_subnet.*.id
+}
+
+# Create RDS Instance
+resource "aws_db_instance" "default" {
+  allocated_storage    = 20
+  engine             = "postgres"
+  engine_version     = "13.2"
+  instance_class     = "db.t3.micro"
+  db_name               = "mydatabase"
+  username           = "mydbuser"
+  password           = "mypassword"
+  db_subnet_group_name = aws_db_subnet_group.default.name
+  vpc_security_group_ids = [aws_security_group.eks_sg.id]
+  skip_final_snapshot = true
+}
+
+# 6. Create Kafka Cluster (Amazon MSK)
+# Finally, configure Amazon MSK for Kafka.
+
+resource "aws_msk_cluster" "example" {
+  cluster_name = "example-cluster"
+  
+  kafka_version = "3.4.0"  # Choose the Kafka version you need
+
+  number_of_broker_nodes = 3
+
+  broker_node_group_info {
+    instance_type = "kafka.t3.small"  # Change as needed
+    client_subnets = ["subnet-12345678", "subnet-87654321"]  # Your subnet IDs
+    # ebs_volume_size = 100  # Size in GB
+
+    security_groups = ["sg-0123456789abcdef0"]  # Security group ID
+  }
+
+  encryption_info {
+    encryption_at_rest_kms_key_arn = "arn:aws:kms:ap-south-1:123456789012:key/your-key-id"  # Optional
+    encryption_in_transit {
+      client_broker = "TLS"  # Options: TLS, TLS_PLAINTEXT, PLAINTEXT
+      in_cluster = true
+    }
+  }
+
+  tags = {
+    Name = "Example MSK Cluster"
+  }
+}
+
+# module "msk_cluster" {
+#   source = "../.."
+#   name                   = local.name
+#   kafka_version          = "3.5.1"
+#   number_of_broker_nodes = 3
+
+#   broker_node_client_subnets  = module.vpc.private_subnets
+#   broker_node_instance_type   = "kafka.t3.small"
+#   broker_node_security_groups = [module.security_group.security_group_id]
+
+#   tags = local.tags
+# }
+# resource "aws_msk_cluster" "example" {
+#   cluster_name = "my-kafka-cluster"
+#   kafka_version = "2.6.1"
+#   number_of_broker_nodes = 2
+
+  
+#   broker_node_group_info {
+#     instance_type = "kafka.t3.small"
+#     client_subnets = aws_subnet.eks_private_subnet.*.id
+#     # ebs_volume_size = 100
+#     security_groups = ["sg-12345678"]
+#     broker_node_storage_info = {
+#         ebs_storage_info = { volume_size = 100 }
+#     }
+#   }
+# }
+
+
+
+# resource "aws_eks_cluster" "nili_eks_cluster" {
+#     name     = "nili-eks-cluster"
+#     role_arn = aws_iam_role.eks_role.arn
+
+#     vpc_config {
+#     subnet_ids = aws_subnet.eks_subnet.*.id
+#     }
+
+#     depends_on = [aws_iam_role_policy_attachment.eks_cluster_policy]
+# }
+
+# resource "aws_iam_role" "eks_role" {
+#     name = "eks_role"
+
+#     assume_role_policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [{
+#         Action = "sts:AssumeRole"
+#         Principal = {
+#         Service = "eks.amazonaws.com"
+#         }
+#         Effect = "Allow"
+#         Sid    = ""
+#     }]
+#     })
+# }
+
+# resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
+#     policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+#     role       = aws_iam_role.eks_role.name
+# }
+
+# output "cluster_endpoint" {
+#     value = aws_eks_cluster.my_eks_cluster.endpoint
+# }
+
+# output "cluster_name" {
+#     value = aws_eks_cluster.my_eks_cluster.name
+# }
+
+# resource "aws_db_instance" "default" {
+#   allocated_storage    = 20
+#   engine             = "postgres"
+#   engine_version     = "13.2"
+#   instance_class     = "db.t3.micro"
+#   name               = "mydatabase"
+#   username           = "mydbuser"
+#   password           = "mypassword"
+#   db_subnet_group_name = aws_db_subnet_group.default.name
+#   vpc_security_group_ids = [aws_security_group.default.id]
+#   skip_final_snapshot = true
+# }
+
+# resource "aws_msk_cluster" "example" {
+#   cluster_name = "my-kafka-cluster"
+#   kafka_version = "2.6.1"
+#   number_of_broker_nodes = 2
+
+#   broker_node_group_info {
+#     instance_type = "kafka.t3.small"
+#     client_subnets = aws_subnet.eks_subnet.*.id
+#     ebs_volume_size = 100
+#   }
+# }

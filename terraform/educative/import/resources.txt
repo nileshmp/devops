@@ -1,0 +1,68 @@
+# aws_subnet.ltthw-vpc-subnet:
+resource "aws_subnet" "ltthw-vpc-subnet" {
+    arn                                            = "arn:aws:ec2:ap-south-1:050752608385:subnet/subnet-06c5d8af13b2f795a"
+    assign_ipv6_address_on_creation                = false
+    availability_zone                              = "ap-south-1c"
+    availability_zone_id                           = "aps1-az2"
+    cidr_block                                     = "10.0.0.0/16"
+    customer_owned_ipv4_pool                       = [90mnull[0m[0m
+    enable_dns64                                   = false
+    enable_lni_at_device_index                     = 0
+    enable_resource_name_dns_a_record_on_launch    = false
+    enable_resource_name_dns_aaaa_record_on_launch = false
+    id                                             = "subnet-06c5d8af13b2f795a"
+    ipv6_cidr_block                                = [90mnull[0m[0m
+    ipv6_cidr_block_association_id                 = [90mnull[0m[0m
+    ipv6_native                                    = false
+    map_customer_owned_ip_on_launch                = false
+    map_public_ip_on_launch                        = false
+    outpost_arn                                    = [90mnull[0m[0m
+    owner_id                                       = "050752608385"
+    private_dns_hostname_type_on_launch            = "ip-name"
+    tags_all                                       = {}
+    vpc_id                                         = "vpc-00cbc58e4cbbc24c3"
+}
+
+# aws_vpc.ltthw-vpc:
+resource "aws_vpc" "ltthw-vpc" {
+    arn                                  = "arn:aws:ec2:ap-south-1:050752608385:vpc/vpc-00cbc58e4cbbc24c3"
+    assign_generated_ipv6_cidr_block     = false
+    cidr_block                           = "10.0.0.0/16"
+    default_network_acl_id               = "acl-02c9e3dd5c43d1f65"
+    default_route_table_id               = "rtb-070be54302a811c4e"
+    default_security_group_id            = "sg-0b9e17898cfc367a3"
+    dhcp_options_id                      = "dopt-0ab9b9ce8dd74f145"
+    enable_dns_hostnames                 = false
+    enable_dns_support                   = true
+    enable_network_address_usage_metrics = false
+    id                                   = "vpc-00cbc58e4cbbc24c3"
+    instance_tenancy                     = "default"
+    ipv6_association_id                  = [90mnull[0m[0m
+    ipv6_cidr_block                      = [90mnull[0m[0m
+    ipv6_cidr_block_network_border_group = [90mnull[0m[0m
+    ipv6_ipam_pool_id                    = [90mnull[0m[0m
+    ipv6_netmask_length                  = 0
+    main_route_table_id                  = "rtb-070be54302a811c4e"
+    owner_id                             = "050752608385"
+    tags                                 = {
+        "Name" = "ltthw-vpc"
+    }
+    tags_all                             = {
+        "Name" = "ltthw-vpc"
+    }
+}
+
+# local_file.hello_local_file:
+resource "local_file" "hello_local_file" {
+    content              = "Hello terraform local!"
+    content_base64sha256 = "g59jvlkxxFyzZc1qh2j2/xTvtQHmpnWCbjixQH217k0="
+    content_base64sha512 = "5z5sX1ns/Iy3sEfbr+E3/6348RoeIudOl38YyHeglIgj9qE1M8nlr4+msASAHNI3i/afmaTzcdcOCZp0LJ9iMA=="
+    content_md5          = "de05f9f983dbccf2494acdb1fe06bfda"
+    content_sha1         = "87854c876545c68a54349a141d2a023ef503e9b3"
+    content_sha256       = "839f63be5931c45cb365cd6a8768f6ff14efb501e6a675826e38b1407db5ee4d"
+    content_sha512       = "e73e6c5f59ecfc8cb7b047dbafe137ffadf8f11a1e22e74e977f18c877a0948823f6a13533c9e5af8fa6b004801cd2378bf69f99a4f371d70e099a742c9f6230"
+    directory_permission = "0777"
+    file_permission      = "0777"
+    filename             = "./hello_local.txt"
+    id                   = "87854c876545c68a54349a141d2a023ef503e9b3"
+}

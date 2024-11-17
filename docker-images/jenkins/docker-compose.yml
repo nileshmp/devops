@@ -1,0 +1,46 @@
+# services:
+#   jenkins:
+#     image: jenkins-aws-ready
+#     restart: on-failure
+#     ports:
+#       - "8080:8090"
+#       - "50000:50000"
+#     volumes:
+#       - jenkins_home:/var/jenkins_home
+#   ssh-agent:
+#     image: jenkins/ssh-agent
+# volumes:
+#   jenkins_home:
+
+version: '3'
+services:
+  jenkins:
+    image: jenkins-aws-ready
+    container_name: jenkins-aws-ready
+    privileged: true
+    user: root
+    volumes:
+      - ~/jenkins:/var/jenkins_home
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - jenkinsnet
+
+  server:
+    image: nginx:1.17.2
+    container_name: nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf # your nginx config file
+      - /var/log/nginx:/var/log/nginx # log files
+    restart: always
+    command: nginx-debug -g 'daemon off;'
+    ports:
+      - 8000:80
+    networks:
+      - jenkinsnet
+    depends_on: 
+      - jenkins
+
+networks:
+  jenkinsnet:

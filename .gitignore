@@ -1,0 +1,7 @@
+terraform/terraform-eks
+terraform.tfstate
+terraform.tfstate.backup
+.terraform.lock.hcl
+.terraform
+
+.DS_Store

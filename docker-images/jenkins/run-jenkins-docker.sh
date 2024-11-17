@@ -1,0 +1,1 @@
+docker run -p 8090:8090 -p 50000:50000 --restart=on-failure jenkins-aws-ready

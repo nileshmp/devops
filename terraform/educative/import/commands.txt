@@ -1,0 +1,6 @@
+terraform init
+terraform apply -auto-approve
+terraform show > resources.txt
+rm terraform.tfstate
+terraform import aws_subnet.ltthw-vpc-subnet subnet-06c5d8af13b2f795a
+terraform show > resources-after.txt

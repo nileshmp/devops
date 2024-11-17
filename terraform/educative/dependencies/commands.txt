@@ -1,0 +1,6 @@
+terraform init
+terraform apply -auto-approve
+terraform plan -destroy -target=aws_vpc.ltthw-vpc
+terraform plan
+terraform plan -destroy -target=aws_subnet.ltthw-vpc-subnet
+terraform destroy -auto-approve

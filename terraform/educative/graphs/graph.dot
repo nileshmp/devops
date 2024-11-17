@@ -1,0 +1,9 @@
+digraph G {
+  rankdir = "RL";
+  node [shape = rect, fontname = "sans-serif"];
+  "aws_subnet.ltthw-vpc-subnet" [label="aws_subnet.ltthw-vpc-subnet"];
+  "aws_vpc.ltthw-vpc" [label="aws_vpc.ltthw-vpc"];
+  "local_file.hello_local_file" [label="local_file.hello_local_file"];
+  "aws_subnet.ltthw-vpc-subnet" -> "aws_vpc.ltthw-vpc";
+  "local_file.hello_local_file" -> "aws_vpc.ltthw-vpc";
+}
