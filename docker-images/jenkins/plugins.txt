@@ -1,1 +1,4 @@
-pipeline-model-definition
+cloudbees-folder:latest
+dashboard-view:latest
+docker-plugin:1.7.0
+docker-workflow:latest
