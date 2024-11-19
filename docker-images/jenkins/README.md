@@ -1,4 +1,10 @@
 # README
+- `./build-jenkins-4-terraform.sh aws_access_key aws_secret_key`
+- `./docker-compose.sh`
+- `docker exec -it jenkins-aws-ready /bin/bash`
+
+## TODO
+- executing dockerd as s deamon in docker build.
 
 ## Resourceces
 - https://stackoverflow.com/questions/64105200/how-to-customize-the-url-for-jenkins-docker-container
