@@ -26,6 +26,7 @@ services:
       - 8080:8080
     networks:
       - jenkinsnet
+    # command: /bin/sh -c "dockerd"
 
   server:
     image: nginx:1.17.2

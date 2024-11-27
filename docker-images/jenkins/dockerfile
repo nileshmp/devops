@@ -68,8 +68,8 @@ RUN apt-get update && \
 COPY --chown=jenkins:jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli -f /usr/share/jenkins/ref/plugins.txt
 RUN usermod -a -G docker jenkins
-
-# RUN dockerd
+# RUN whoami
+# CMD dockerd
 
 ARG AWS_ACCESS_KEY=aws_access_key
 ARG AWS_SECRET_KEY=aws_secret_key
