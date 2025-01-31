@@ -1,0 +1,99 @@
+# IMPORTANT NOTE: Make sure you replace the GRAYLOG_PASSWORD_SECRET on line 53 with one you generate. You must
+#                 also replace the GRAYLOG_ROOT_PASSWORD_SHA2 on line 56 with one you generate. This stack will
+#                 not load without these passwords defined.
+#
+#                 Data is persisted using the three volumes created below. Port 9200 is exposed on the Elasticsearch
+#                 container allowing you to spin up a Grafana container to use for visulization as well.
+#
+
+version: '3'
+
+services:
+  # MongoDB: https://hub.docker.com/_/mongo/
+  mongo:
+    image: mongo:5.0.13
+    container_name: mongo
+    hostname: mongo
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - graylog
+  
+  # Elasticsearch: https://www.elastic.co/guide/en/elasticsearch/reference/7.10/docker.html
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
+    container_name: elasticsearch
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    environment:
+      - http.host=0.0.0.0
+      - transport.host=localhost
+      - network.host=0.0.0.0
+      - "ES_JAVA_OPTS=-Dlog4j2.formatMsgNoLookups=true -Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    networks:
+      - graylog
+    ports:
+      - 9200:9200
+  
+  # Graylog: https://hub.docker.com/r/graylog/graylog/
+  graylog:
+    # image: graylog/graylog:4.3
+    image: graylog/graylog:5.2.7
+    container_name: graylog
+    hostname: graylog
+    environment:
+      # For encrypting new user passwords (Generate using 'pwgen -N 1 -s 96')
+      - GRAYLOG_PASSWORD_SECRET=u6m0VKQxgw8Y5T0E7JDA4RUuOOI9ueU1ZNUpXN/EpihhePF6GETfFrIhbPKbADDL
+      # Root Password: generate using the command pipeline on the line below:
+      # echo -n "Enter Password: " && head -1 </dev/stdin | tr -d '\n' | sha256sum | cut -d" " -f1
+      - GRAYLOG_ROOT_PASSWORD_SHA2=cc41de147e5c624c6a7c230648545f6d14f82fa0e591148dc96993b3e539abfc
+      - GRAYLOG_HTTP_EXTERNAL_URI=http://127.0.0.1:9000/
+    entrypoint: /usr/bin/tini -- wait-for-it elasticsearch:9200 --  /docker-entrypoint.sh
+    networks:
+      - graylog
+    restart: always
+    depends_on:
+      - mongo
+      - elasticsearch
+    volumes:
+      - graylog_data:/usr/share/graylog/data
+      # Used for Geocoding IP addresses
+      # You can download this after creating an account here:
+      # https://dev.maxmind.com/geoip/geolite2-free-geolocation-data?lang=en
+      #- /path/on/host/to/GeoLite2-City.mmdb:/etc/graylog/server/GeoLite2-City.mmdb
+    ports:
+      # Graylog web interface and REST API
+      - 9000:9000
+      # Syslog TCP
+      - 1514:1514/tcp
+      # Syslog UDP
+      - 1514:1514/udp
+      # Syslog TCP
+      - 514:1514/tcp
+      # Syslog UDP
+      - 514:1514/udp
+      # GELF TCP
+      - 12201:12201/tcp
+      # GELF UDP
+      - 12201:12201/udp
+
+volumes:
+  graylog_data:
+    driver: 'local'
+  mongo_data:
+    driver: 'local'
+  es_data:
+    driver: 'local'
+
+networks:
+  graylog:
+    driver: bridge
+    name: graylog

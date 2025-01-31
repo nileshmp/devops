@@ -2,45 +2,50 @@
 version: '3.9'
 
 services:
-
-#   postgres:
-#     image: postgres:latest
-#     container_name: my_db_pg_container
-#     restart: always
-#     environment:
-#       POSTGRES_DB: my_db
-#       POSTGRES_USER: postgres
-#       POSTGRES_PASSWORD: postgres
-#     ports:
-#       - "5432:5432"
-#     volumes:
-#       - ./migrations/1_db_init.up.sql:/docker-entrypoint-initdb.d/init.sql
-#     networks:
-#       - my_network
-
-# networks:
-#   my_network:
-
-  db:
-    image: postgres
-    restart: always
-    # set shared memory limit when using docker-compose
-    shm_size: 128mb
-    # or set shared memory limit when deploy via swarm stack
-    #volumes:
-    #  - type: tmpfs
-    #    target: /dev/shm
-    #    tmpfs:
-    #      size: 134217728 # 128*2^20 bytes = 128Mb
+  postgres:
+    image: postgres:latest
+    container_name: my-postgres
     environment:
-      POSTGRES_DB: SUkrtya
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: devdb
     ports:
-      - 5432:5432
+      - "5432:5432"  # Exposing port 5432 for database access
+    volumes:
+      - pg_data:/var/lib/postgresql/data  # Persisting data
+    networks:
+      - mynetwork
+    restart: always  # Restart policy in case the container stops unexpectedly
 
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8080:8080
+# Named volume for persisting PostgreSQL data
+volumes:
+  pg_data:
+
+# Networks (optional if you plan to connect this container to other containers)
+networks:
+  mynetwork:
+    driver: bridge
+
+  # db:
+  #   image: postgres
+  #   restart: always
+  #   # set shared memory limit when using docker-compose
+  #   shm_size: 128mb
+  #   # or set shared memory limit when deploy via swarm stack
+  #   #volumes:
+  #   #  - type: tmpfs
+  #   #    target: /dev/shm
+  #   #    tmpfs:
+  #   #      size: 134217728 # 128*2^20 bytes = 128Mb
+  #   environment:
+  #     POSTGRES_DB: postgres
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: dbadmin
+  #   ports:
+  #     - 5432:5432
+
+  # adminer:
+  #   image: adminer
+  #   restart: always
+  #   ports:
+  #     - 8080:8080

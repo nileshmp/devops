@@ -1,0 +1,11 @@
+cloudbees-folder:latest
+dashboard-view:latest
+configuration-as-code:latest
+workflow-aggregator:latest
+pipeline-graph-view:latest
+antisamy-markup-formatter:latest
+build-name-setter:latest
+timestamper:latest
+ws-cleanup:latest
+docker-plugin:1.7.0
+docker-workflow:latest
